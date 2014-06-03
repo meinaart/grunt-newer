@@ -153,7 +153,7 @@ Example use of the `override` option:
   });
 ```
 
-## grunt-newer support for non-standard grunt-plugins
+## support for non-standard Grunt-plugins
 
 Some plugins do not follow the standard Grunt file declarations. A good example of this is [`grunt-spritesmith`](https://npmjs.org/package/grunt-spritesmith) - This task uses multiple `src` images to produce `destImg` and `destCSS` files.
 
@@ -190,13 +190,13 @@ Please [submit an issue](https://github.com/tschaub/grunt-newer/issues) if you e
 
 ## Known limitations
 
-The `newer` task relies on Grunt's convention for specifying [`src`/`dest` mappings](http://gruntjs.com/configuring-tasks#files).  So it should be expected to work with two types of tasks:
+The `newer` task relies on Grunt's convention for specifying [`src`/`dest` mappings](http://gruntjs.com/configuring-tasks#files).  So it should be expected to work with following types of tasks:
 
 1) Tasks that specify both `src` and `dest` files.  In this case, the task prefixed by `newer` will be configured to run with `src` files that are newer than the corresponding `dest` file (based on the `mtime` of files).
 
 2) Tasks that specify only `src` files.  In this case, the task prefixed by `newer` will be configured to run with `src` files that are newer than the previous successful run of the same task.
 
-3) Tasks that have a special `newer` property to define additional files to watch. A `src` property is still required.
+3) Tasks that have the `newer` property set. A `src` property is also required.
 
 The `newer` task will *not* work as a prefix for the following tasks:
 
