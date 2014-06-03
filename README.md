@@ -153,6 +153,35 @@ Example use of the `override` option:
   });
 ```
 
+## grunt-newer support for non-standard grunt-plugins
+
+Some plugins do not follow the standard Grunt file declarations. A good example of this is [`grunt-spritesmith`](https://npmjs.org/package/grunt-spritesmith) - This task uses multiple `src` images to produce `destImg` and `destCSS` files.
+
+Since v0.7.1 of grunt-newer you can add a `newer` parameter to the configuration of plugins that at least have a `src` property.
+
+Example for spritesmith:
+```javascript
+module.exports = function (grunt) {
+  // Configure grunt
+  grunt.initConfig({
+    sprite:{
+      all: {
+        src: 'path/to/your/sprites/*.png',
+        destImg: 'destination/of/spritesheet.png',
+        destCSS: 'destination/of/sprites.css'
+        newer: {
+          keys: ['destImg','destCSS']
+        }
+      }
+    }
+  });
+
+  // Load in `grunt-spritesmith`
+  grunt.loadNpmTasks('grunt-spritesmith');
+```
+
+You can also supply the destination file(s) directly to the `newer` option as a string or array. If you set it to true the `src` option is used as `dest`. If a destination is nested in the `options` object you can use "options.key".
+
 ## That's it
 
 Please [submit an issue](https://github.com/tschaub/grunt-newer/issues) if you encounter any trouble.  Contributions or suggestions for improvements welcome!
@@ -167,8 +196,8 @@ The `newer` task relies on Grunt's convention for specifying [`src`/`dest` mappi
 
 2) Tasks that specify only `src` files.  In this case, the task prefixed by `newer` will be configured to run with `src` files that are newer than the previous successful run of the same task.
 
+3) Tasks that have a special `newer` property to define additional files to watch. A `src` property is still required.
+
 The `newer` task will *not* work as a prefix for the following tasks:
 
  * [`grunt-rsync`](http://npmjs.org/package/grunt-rsync) - Though this task specifies `src` and `dest` files, the `dest` file is not generated based on `src` files (instead it is a directory).
-
- * [`grunt-spritesmith`](https://npmjs.org/package/grunt-spritesmith) - This task uses multiple `src` images to produce `destImg` and `destCSS` files.  Instead use the [`grunt-spritely`](https://npmjs.org/package/grunt-spritely) task configured with `src` and `dest` files.

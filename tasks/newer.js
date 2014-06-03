@@ -3,6 +3,7 @@ var path = require('path');
 
 var async = require('async');
 var rimraf = require('rimraf');
+var _ = require('underscore');
 
 var util = require('../lib/util');
 
@@ -29,11 +30,11 @@ function nullOverride(details, include) {
 }
 
 function createTask(grunt) {
-  return function(taskName, targetName) {
+  return function (taskName, targetName) {
     var tasks = [];
     var prefix = this.name;
     if (!targetName) {
-      Object.keys(grunt.config(taskName)).forEach(function(targetName) {
+      Object.keys(grunt.config(taskName)).forEach(function (targetName) {
         if (!/^_|^options$/.test(targetName)) {
           tasks.push(prefix + ':' + taskName + ':' + targetName);
         }
@@ -67,7 +68,7 @@ function createTask(grunt) {
       delete config.files;
       srcFiles = false;
     } else if (Array.isArray(config.files) &&
-        typeof config.files[0] === 'string') {
+      typeof config.files[0] === 'string') {
       config.src = config.files;
       delete config.files;
       srcFiles = false;
@@ -92,8 +93,68 @@ function createTask(grunt) {
       options.override(details, include);
     }
 
-    var files = grunt.task.normalizeMultiTaskFiles(config, targetName);
-    util.filterFilesByTime(files, previous, override, function(e, newerFiles) {
+    var files = [];
+    var hasNewerOption = false;
+
+    // Process optional newer option from original task
+    if (config.newer) {
+      var sourceFiles = Array.isArray(config.src) ? config.src : [config.src];
+
+      var destFiles = _.clone(config.newer);
+      switch (typeof destFiles) {
+      case 'string':
+        destFiles = [destFiles];
+        break;
+      case 'boolean':
+        if (destFiles) {
+          destFiles = sourceFiles;
+        } else {
+          files = grunt.task.normalizeMultiTaskFiles(config, targetName);
+        }
+        break;
+      case 'object':
+        if (!Array.isArray(destFiles)) {
+          if(typeof destFiles.keys === 'string') {
+            destFiles.keys = [destFiles.keys];
+          }
+
+          if (destFiles.keys && Array.isArray(destFiles.keys)) {
+            var keys = destFiles.keys;
+            destFiles = [];
+            keys.forEach(function (key) {
+              if (key.match(/^options\./)) {
+                key = key.replace(/^options\./, '');
+                destFiles.push(config.options[key]);
+              } else {
+                destFiles.push(config[key]);
+              }
+            });
+          }
+        }
+        break;
+      }
+
+      if(files.length === 0) {
+        sourceFiles.forEach(function (src) {
+          destFiles.forEach(function (dest) {
+            files.push({
+              src: src,
+              dest: grunt.config.process(dest)
+            });
+          });
+        });
+
+        files = grunt.task.normalizeMultiTaskFiles({
+          files: files
+        }, targetName);
+
+        hasNewerOption = true;
+      }
+    } else {
+      files = grunt.task.normalizeMultiTaskFiles(config, targetName);
+    }
+
+    util.filterFilesByTime(files, previous, override, function (e, newerFiles) {
       if (e) {
         return done(e);
       } else if (newerFiles.length === 0) {
@@ -106,16 +167,18 @@ function createTask(grunt) {
        * transform the newerFiles array into an array of source files.
        */
       if (!srcFiles) {
-        newerFiles = newerFiles.map(function(obj) {
+        newerFiles = newerFiles.map(function (obj) {
           return obj.src;
         });
       }
 
-      // configure target with only newer files
-      config.files = newerFiles;
-      delete config.src;
-      delete config.dest;
-      grunt.config.set([taskName, targetName], config);
+      if (!hasNewerOption) {
+        // configure target with only newer files
+        config.files = newerFiles;
+        delete config.src;
+        delete config.dest;
+        grunt.config.set([taskName, targetName], config);
+      }
 
       // because we modified the task config, cache the original
       var id = cacheConfig(originalConfig);
@@ -136,54 +199,54 @@ function createTask(grunt) {
 
 
 /** @param {Object} grunt Grunt. */
-module.exports = function(grunt) {
+module.exports = function (grunt) {
 
   grunt.registerTask(
-      'newer', 'Run a task with only those source files that have been ' +
-      'modified since the last successful run.', createTask(grunt));
+    'newer', 'Run a task with only those source files that have been ' +
+    'modified since the last successful run.', createTask(grunt));
 
   var deprecated = 'DEPRECATED TASK.  Use the "newer" task instead';
   grunt.registerTask(
-      'any-newer', deprecated, function() {
-        grunt.log.warn(deprecated);
-        var args = Array.prototype.join.call(arguments, ':');
-        grunt.task.run(['newer:' + args]);
-      });
+    'any-newer', deprecated, function () {
+      grunt.log.warn(deprecated);
+      var args = Array.prototype.join.call(arguments, ':');
+      grunt.task.run(['newer:' + args]);
+    });
 
   var internal = 'Internal task.';
   grunt.registerTask(
-      'newer-postrun', internal, function(taskName, targetName, id, dir) {
+    'newer-postrun', internal, function (taskName, targetName, id, dir) {
 
-        // if dir includes a ':', grunt will split it among multiple args
-        dir = Array.prototype.slice.call(arguments, 3).join(':');
-        grunt.file.write(util.getStampPath(dir, taskName, targetName), '');
+      // if dir includes a ':', grunt will split it among multiple args
+      dir = Array.prototype.slice.call(arguments, 3).join(':');
+      grunt.file.write(util.getStampPath(dir, taskName, targetName), '');
 
-        // reconfigure task with original config
-        grunt.config.set([taskName, targetName], pluckConfig(id));
+      // reconfigure task with original config
+      grunt.config.set([taskName, targetName], pluckConfig(id));
 
-      });
+    });
 
   var clean = 'Remove cached timestamps.';
   grunt.registerTask(
-      'newer-clean', clean, function(taskName, targetName) {
-        var done = this.async();
+    'newer-clean', clean, function (taskName, targetName) {
+      var done = this.async();
 
-        /**
-         * This intentionally only works with the default cache dir.  If a
-         * custom cache dir is provided, it is up to the user to keep it clean.
-         */
-        var cacheDir = path.join(__dirname, '..', '.cache');
-        if (taskName && targetName) {
-          cacheDir = util.getStampPath(cacheDir, taskName, targetName);
-        } else if (taskName) {
-          cacheDir = path.join(cacheDir, taskName);
-        }
-        if (grunt.file.exists(cacheDir)) {
-          grunt.log.writeln('Cleaning ' + cacheDir);
-          rimraf(cacheDir, done);
-        } else {
-          done();
-        }
-      });
+      /**
+       * This intentionally only works with the default cache dir.  If a
+       * custom cache dir is provided, it is up to the user to keep it clean.
+       */
+      var cacheDir = path.join(__dirname, '..', '.cache');
+      if (taskName && targetName) {
+        cacheDir = util.getStampPath(cacheDir, taskName, targetName);
+      } else if (taskName) {
+        cacheDir = path.join(cacheDir, taskName);
+      }
+      if (grunt.file.exists(cacheDir)) {
+        grunt.log.writeln('Cleaning ' + cacheDir);
+        rimraf(cacheDir, done);
+      } else {
+        done();
+      }
+    });
 
 };

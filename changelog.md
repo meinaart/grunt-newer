@@ -1,5 +1,9 @@
 # Change Log
 
+## 0.7.1
+
+ * Support for `newer` option on tasks that are not compatible with previous grunt-newer releases.
+
 ## 0.7.0
 
  * Support for `override` option.  In cases where a `src` file should be included even if it has not been modified (e.g. a LESS file whose imports have been modified), the `override` option can be used (see #35)
