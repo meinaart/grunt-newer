@@ -153,7 +153,7 @@ Example use of the `override` option:
   });
 ```
 
-## support for non-standard Grunt-plugins
+## Support for non-standard Grunt-plugins
 
 Some plugins do not follow the standard Grunt file declarations. A good example of this is [`grunt-spritesmith`](https://npmjs.org/package/grunt-spritesmith) - This task uses multiple `src` images to produce `destImg` and `destCSS` files.
 
