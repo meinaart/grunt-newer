@@ -1,7 +1,6 @@
 var assert = require('assert');
 var fs = require('fs');
 
-
 /**
  * Create a clone of the object with just src and dest properties.
  * @param {Object} obj Source object.
@@ -29,9 +28,11 @@ function filter(files, fallbackDest) {
     };
   }
 
-  return files.map(fallbackDest !== undefined ? fallbackPrune : prune).filter(function(obj) {
-    return obj.src && obj.src.length > 0 && obj.dest !== false;
-  });
+  return files
+    .map(fallbackDest !== undefined ? fallbackPrune : prune)
+    .filter(function(obj) {
+      return obj.src && obj.src.length > 0 && obj.dest !== false;
+    });
 }
 
 
@@ -44,7 +45,6 @@ module.exports = function(grunt) {
     var log = this.data.getLog();
 
     if (expected.length === 0) {
-      console.log(log[0]);
       assert.equal(log.length, 0, 'Expected no log entries, got ' + log.length);
       log.length = 0;
     } else {
