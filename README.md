@@ -180,7 +180,7 @@ module.exports = function (grunt) {
   grunt.loadNpmTasks('grunt-spritesmith');
 ```
 
-If you want to use a value from the `options` object you can use "options.key". You can also supply the destination file(s) directly to the `newer` option as a string or array.
+If you want to use a value from the `options` object you can prefix the key: `newer: { keys: ["options.key"] }`. You can also supply the destination file(s) directly to the `newer` option as a string or array.
 
 ## That's it
 
