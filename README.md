@@ -180,7 +180,7 @@ module.exports = function (grunt) {
   grunt.loadNpmTasks('grunt-spritesmith');
 ```
 
-You can also supply the destination file(s) directly to the `newer` option as a string or array. If you set it to true the `src` option is used as `dest`. If a destination is nested in the `options` object you can use "options.key".
+If you want to use a value from the `options` object you can use "options.key". You can also supply the destination file(s) directly to the `newer` option as a string or array.
 
 ## That's it
 

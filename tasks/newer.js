@@ -93,7 +93,7 @@ function createTask(grunt) {
       options.override(details, include);
     }
 
-    var files = [];
+    var files;
     var hasNewerOption = false;
 
     // Process optional newer option from original task
@@ -101,16 +101,10 @@ function createTask(grunt) {
       var sourceFiles = Array.isArray(config.src) ? config.src : [config.src];
 
       var destFiles = _.clone(config.newer);
+      var configPassed = true;
       switch (typeof destFiles) {
       case 'string':
         destFiles = [destFiles];
-        break;
-      case 'boolean':
-        if (destFiles) {
-          destFiles = sourceFiles;
-        } else {
-          files = grunt.task.normalizeMultiTaskFiles(config, targetName);
-        }
         break;
       case 'object':
         if (!Array.isArray(destFiles)) {
@@ -132,9 +126,12 @@ function createTask(grunt) {
           }
         }
         break;
+      default:
+        configPassed = false;
       }
 
-      if(files.length === 0) {
+      if(configPassed) {
+        files = [];
         sourceFiles.forEach(function (src) {
           destFiles.forEach(function (dest) {
             files.push({
@@ -150,7 +147,9 @@ function createTask(grunt) {
 
         hasNewerOption = true;
       }
-    } else {
+    }
+
+    if(!files) {
       files = grunt.task.normalizeMultiTaskFiles(config, targetName);
     }
 
