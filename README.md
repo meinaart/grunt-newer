@@ -159,7 +159,7 @@ Some plugins do not follow the standard Grunt file declarations. A good example 
 
 Since v0.7.1 of grunt-newer you can add a `newer` parameter to the configuration of plugins that at least have a `src` property.
 
-Example for spritesmith:
+Example for [`grunt-spritesmith`](https://npmjs.org/package/grunt-spritesmith):
 ```javascript
 module.exports = function (grunt) {
   // Configure grunt
