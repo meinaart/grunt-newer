@@ -164,7 +164,7 @@ It can have 3 types of arguments:
 * **function** - Function to call, this is the only option that is also called when there are no changes.
 * **boolean** - When set to true the task `newer-callback` is called, see example below.
 
-Example use of the `callback` task option set to a string:
+Example use of the `callback` task option set to a **string**:
 
 ```js
   var srcFiles = 'src/**/*.js';
@@ -195,7 +195,7 @@ Example use of the `callback` task option set to a string:
   grunt.loadNpmTasks('grunt-newer');
 ```
 
-Example use of the `callback` task option set to a method:
+Example use of the `callback` task option set to a **function**:
 
 ```js
   var srcFiles = 'src/**/*.js';
@@ -224,7 +224,7 @@ Example use of the `callback` task option set to a method:
   grunt.loadNpmTasks('grunt-newer');
 ```
 
-Example use of the `callback` task option set to true:
+Example use of the `callback` task option set to **boolean** value true:
 ```js
   var srcFiles = 'src/**/*.js';
 
