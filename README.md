@@ -153,7 +153,18 @@ Example use of the `override` option:
   });
 ```
 
-Example use of the `callback` task option:
+#### <a id="optionsoverride">options.callback</a>
+ * type: `function | boolean | string`
+ * default: `null`
+
+ The `callback` option can be used to perform certain tasks when new files are (not) found.
+
+ It can have 3 types of arguments:
+ * **string** - Custom task to perform
+ * **function** - Function to call, this is the only option that is also called when there are no changes.
+ * **boolean** - When set to true the task `newer-callback` is called, see example below.
+
+Example use of the `callback` task option set to a string:
 
 ```js
   var srcFiles = 'src/**/*.js';
@@ -184,7 +195,7 @@ Example use of the `callback` task option:
   grunt.loadNpmTasks('grunt-newer');
 ```
 
-Example use of the `callback` method option:
+Example use of the `callback` task option set to a method:
 
 ```js
   var srcFiles = 'src/**/*.js';
@@ -213,6 +224,46 @@ Example use of the `callback` method option:
   grunt.loadNpmTasks('grunt-newer');
 ```
 
+Example use of the `callback` task option set to true:
+```js
+  var srcFiles = 'src/**/*.js';
+
+  grunt.registerTask('newer-callback:jshint:all', function() {
+    console.log('This task runs when a file has changed, defined in options for newer.');
+  });
+
+  grunt.registerTask('newer-after-custom', function() {
+    console.log('This task runs when a file has changed, defined in the task.');
+  });
+
+  grunt.initConfig({
+    newer: {
+      options: {
+        callback: true
+      }
+    }
+    jshint: {
+      all: {
+        src: srcFiles
+        newer: {
+          callback: 'newer-after-custom'
+        }
+      }
+    },
+    watch: {
+      all: {
+        files: srcFiles,
+        tasks: ['newer:jshint:all']
+      }
+    }
+  });
+
+  grunt.loadNpmTasks('grunt-contrib-jshint');
+  grunt.loadNpmTasks('grunt-contrib-watch');
+  grunt.loadNpmTasks('grunt-newer');
+```
+
+## Additional tasks
 Example use of additional tasks, newer-after-custom and newer-after-custom2 only run if there are newer files:
 ```js
   var srcFiles = 'src/**/*.js';
