@@ -29,17 +29,30 @@ function nullOverride(details, include) {
 }
 
 function createTask(grunt) {
-  return function(taskName, targetName) {
+  return function (taskName, targetName) {
+    grunt.log.writeln(taskName, targetName);
+
     var tasks = [];
     var prefix = this.name;
+    var additionalTasks = [];
     if (!targetName) {
-      Object.keys(grunt.config(taskName)).forEach(function(targetName) {
+      Object.keys(grunt.config(taskName)).forEach(function (targetName) {
         if (!/^_|^options$/.test(targetName)) {
           tasks.push(prefix + ':' + taskName + ':' + targetName);
         }
       });
       return grunt.task.run(tasks);
+    } else if (targetName.indexOf(',') !== -1) {
+      var index = targetName.indexOf(',');
+      var baseTargetName = targetName.substring(0, index);
+      additionalTasks = targetName
+        .substring(index + 1, targetName.length)
+        .split(',');
+
+      targetName = baseTargetName;
     }
+    grunt.log.writeln(taskName, targetName);
+
     var args = Array.prototype.slice.call(arguments, 2).join(':');
     var options = this.options({
       cache: path.join(__dirname, '..', '.cache'),
@@ -67,7 +80,7 @@ function createTask(grunt) {
       delete config.files;
       srcFiles = false;
     } else if (Array.isArray(config.files) &&
-        typeof config.files[0] === 'string') {
+      typeof config.files[0] === 'string') {
       config.src = config.files;
       delete config.files;
       srcFiles = false;
@@ -93,11 +106,47 @@ function createTask(grunt) {
     }
 
     var files = grunt.task.normalizeMultiTaskFiles(config, targetName);
-    util.filterFilesByTime(files, previous, override, function(e, newerFiles) {
+    util.filterFilesByTime(files, previous, override, function (e, newerFiles) {
+      var qualified = taskName + ':' + targetName;
+      function initCallback(callback, success) {
+        var callbackTaskName = false;
+        switch (typeof callback) {
+        case 'function':
+          callbackTaskName = 'newer-internal-callback:' +
+            qualified + ':' + id + ':' + options.cache;
+
+          grunt.task.registerTask(callbackTaskName,
+            'Internal callback function', function () {
+              callback(qualified, success, config);
+            });
+          break;
+        case 'string':
+          if(success) {
+            callbackTaskName = callback;
+          }
+          break;
+        case 'boolean':
+          if(callback && success) {
+            callbackTaskName = 'newer-callback:' + qualified;
+          }
+          break;
+        }
+
+        if (callbackTaskName &&
+          (!grunt.task.exists || grunt.task.exists(callbackTaskName))) {
+          tasks.push(callbackTaskName);
+        }
+      }
+
       if (e) {
         return done(e);
       } else if (newerFiles.length === 0) {
         grunt.log.writeln('No newer files to process.');
+        if (typeof options.callback === 'function') {
+          tasks = [];
+          initCallback(options.callback, false);
+          return grunt.task.run(tasks);
+        }
         return done();
       }
 
@@ -106,7 +155,7 @@ function createTask(grunt) {
        * transform the newerFiles array into an array of source files.
        */
       if (!srcFiles) {
-        newerFiles = newerFiles.map(function(obj) {
+        newerFiles = newerFiles.map(function (obj) {
           return obj.src;
         });
       }
@@ -121,13 +170,27 @@ function createTask(grunt) {
       var id = cacheConfig(originalConfig);
 
       // run the task, and attend to postrun tasks
-      var qualified = taskName + ':' + targetName;
-      var tasks = [
-        qualified + (args ? ':' + args : ''),
-        'newer-postrun:' + qualified + ':' + id + ':' + options.cache
-      ];
-      grunt.task.run(tasks);
+      tasks = [qualified + (args ? ':' + args : '')];
 
+      // Run additional tasks before postrun
+      if (additionalTasks) {
+        tasks = tasks.concat(additionalTasks);
+      }
+
+      // Post run task
+      tasks.push('newer-postrun:' + qualified + ':' + id + ':' + options.cache);
+
+      // Execute global callback function or task (for all newer tasks)
+      if(options.callback) {
+        initCallback(options.callback, true);
+      }
+
+      // Execute task specific callback function or task
+      if (originalConfig.newer && originalConfig.newer.callback) {
+        initCallback(originalConfig.newer.callback, true);
+      }
+
+      grunt.task.run(tasks);
       done();
     });
 
@@ -136,54 +199,53 @@ function createTask(grunt) {
 
 
 /** @param {Object} grunt Grunt. */
-module.exports = function(grunt) {
+module.exports = function (grunt) {
 
   grunt.registerTask(
-      'newer', 'Run a task with only those source files that have been ' +
-      'modified since the last successful run.', createTask(grunt));
+    'newer', 'Run a task with only those source files that have been ' +
+    'modified since the last successful run.', createTask(grunt));
 
   var deprecated = 'DEPRECATED TASK.  Use the "newer" task instead';
   grunt.registerTask(
-      'any-newer', deprecated, function() {
-        grunt.log.warn(deprecated);
-        var args = Array.prototype.join.call(arguments, ':');
-        grunt.task.run(['newer:' + args]);
-      });
+    'any-newer', deprecated, function () {
+      grunt.log.warn(deprecated);
+      var args = Array.prototype.join.call(arguments, ':');
+      grunt.task.run(['newer:' + args]);
+    });
 
   var internal = 'Internal task.';
   grunt.registerTask(
-      'newer-postrun', internal, function(taskName, targetName, id, dir) {
+    'newer-postrun', internal, function (taskName, targetName, id, dir) {
 
-        // if dir includes a ':', grunt will split it among multiple args
-        dir = Array.prototype.slice.call(arguments, 3).join(':');
-        grunt.file.write(util.getStampPath(dir, taskName, targetName), '');
+      // if dir includes a ':', grunt will split it among multiple args
+      dir = Array.prototype.slice.call(arguments, 3).join(':');
+      grunt.file.write(util.getStampPath(dir, taskName, targetName), '');
 
-        // reconfigure task with original config
-        grunt.config.set([taskName, targetName], pluckConfig(id));
-
-      });
+      // reconfigure task with original config
+      grunt.config.set([taskName, targetName], pluckConfig(id));
+    });
 
   var clean = 'Remove cached timestamps.';
   grunt.registerTask(
-      'newer-clean', clean, function(taskName, targetName) {
-        var done = this.async();
+    'newer-clean', clean, function (taskName, targetName) {
+      var done = this.async();
 
-        /**
-         * This intentionally only works with the default cache dir.  If a
-         * custom cache dir is provided, it is up to the user to keep it clean.
-         */
-        var cacheDir = path.join(__dirname, '..', '.cache');
-        if (taskName && targetName) {
-          cacheDir = util.getStampPath(cacheDir, taskName, targetName);
-        } else if (taskName) {
-          cacheDir = path.join(cacheDir, taskName);
-        }
-        if (grunt.file.exists(cacheDir)) {
-          grunt.log.writeln('Cleaning ' + cacheDir);
-          rimraf(cacheDir, done);
-        } else {
-          done();
-        }
-      });
+      /**
+       * This intentionally only works with the default cache dir.  If a
+       * custom cache dir is provided, it is up to the user to keep it clean.
+       */
+      var cacheDir = path.join(__dirname, '..', '.cache');
+      if (taskName && targetName) {
+        cacheDir = util.getStampPath(cacheDir, taskName, targetName);
+      } else if (taskName) {
+        cacheDir = path.join(cacheDir, taskName);
+      }
+      if (grunt.file.exists(cacheDir)) {
+        grunt.log.writeln('Cleaning ' + cacheDir);
+        rimraf(cacheDir, done);
+      } else {
+        done();
+      }
+    });
 
 };

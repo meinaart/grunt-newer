@@ -153,6 +153,97 @@ Example use of the `override` option:
   });
 ```
 
+Example use of the `callback` task option:
+
+```js
+  var srcFiles = 'src/**/*.js';
+
+  grunt.registerTask('newer-after-custom', function() {
+    console.log('This task runs when a file has changed.');
+  });
+
+  grunt.initConfig({
+    jshint: {
+      all: {
+        src: srcFiles
+        newer: {
+          callback: 'newer-after-custom'
+        }
+      }
+    },
+    watch: {
+      all: {
+        files: srcFiles,
+        tasks: ['newer:jshint:all']
+      }
+    }
+  });
+
+  grunt.loadNpmTasks('grunt-contrib-jshint');
+  grunt.loadNpmTasks('grunt-contrib-watch');
+  grunt.loadNpmTasks('grunt-newer');
+```
+
+Example use of the `callback` method option:
+
+```js
+  var srcFiles = 'src/**/*.js';
+
+  grunt.initConfig({
+    jshint: {
+      all: {
+        src: srcFiles
+        newer: {
+          callback: function(taskName, success, config) {
+            console.log(taskName, 'found', (success ? 'no changed files' : 'changed files'));
+          }
+        }
+      }
+    },
+    watch: {
+      all: {
+        files: srcFiles,
+        tasks: ['newer:jshint:all']
+      }
+    }
+  });
+
+  grunt.loadNpmTasks('grunt-contrib-jshint');
+  grunt.loadNpmTasks('grunt-contrib-watch');
+  grunt.loadNpmTasks('grunt-newer');
+```
+
+Example use of additional tasks, newer-after-custom and newer-after-custom2 only run if there are newer files:
+```js
+  var srcFiles = 'src/**/*.js';
+
+  grunt.registerTask('newer-after-custom', function() {
+    console.log('This task runs when a file has changed.');
+  });
+
+  grunt.registerTask('newer-after-custom2', function() {
+    console.log('This task runs when a file has changed #2.');
+  });
+
+  grunt.initConfig({
+    jshint: {
+      all: {
+        src: srcFiles
+      }
+    },
+    watch: {
+      all: {
+        files: srcFiles,
+        tasks: ['newer:jshint:all,newer-after-custom,newer-after-custom2']
+      }
+    }
+  });
+
+  grunt.loadNpmTasks('grunt-contrib-jshint');
+  grunt.loadNpmTasks('grunt-contrib-watch');
+  grunt.loadNpmTasks('grunt-newer');
+```
+
 ## That's it
 
 Please [submit an issue](https://github.com/tschaub/grunt-newer/issues) if you encounter any trouble.  Contributions or suggestions for improvements welcome!

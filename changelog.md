@@ -1,5 +1,10 @@
 # Change Log
 
+## 0.7.1
+
+ * Support for `callback` option. It's now possible to add a callback function or task after a task has succesfully run.
+ * Support for additional tasks to be performed only if the first task has newer files
+
 ## 0.7.0
 
  * Support for `override` option.  In cases where a `src` file should be included even if it has not been modified (e.g. a LESS file whose imports have been modified), the `override` option can be used (see #35)
