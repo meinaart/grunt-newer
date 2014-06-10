@@ -157,12 +157,12 @@ Example use of the `override` option:
  * type: `function | boolean | string`
  * default: `null`
 
- The `callback` option can be used to perform certain tasks when new files are (not) found.
+The `callback` option can be used to perform certain tasks when new files are (not) found.
 
- It can have 3 types of arguments:
- * **string** - Custom task to perform
- * **function** - Function to call, this is the only option that is also called when there are no changes.
- * **boolean** - When set to true the task `newer-callback` is called, see example below.
+It can have 3 types of arguments:
+* **string** - Custom task to perform
+* **function** - Function to call, this is the only option that is also called when there are no changes.
+* **boolean** - When set to true the task `newer-callback` is called, see example below.
 
 Example use of the `callback` task option set to a string:
 
